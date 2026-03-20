@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="edu.hitsz.application.DifficultySelection">
+  <grid id="27dc6" binding="Main" layout-manager="GridLayoutManager" row-count="5" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="20">
+    <margin top="30" left="30" bottom="30" right="30"/>
+    <constraints>
+      <xy x="210" y="276" width="766" height="618"/>
+    </constraints>
+    <properties/>
+    <border type="none">
+      <font/>
+    </border>
+    <children>
+      <component id="2a68f" class="javax.swing.JButton" binding="SimpleModeButton">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="4" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="1" height="1"/>
+            <preferred-size width="200" height="100"/>
+            <maximum-size width="200" height="200"/>
+          </grid>
+        </constraints>
+        <properties>
+          <background color="-10185235"/>
+          <enabled value="true"/>
+          <foreground color="-1776160"/>
+          <horizontalAlignment value="0"/>
+          <horizontalTextPosition value="11"/>
+          <margin top="0" left="0" bottom="0" right="0"/>
+          <text value="简单模式"/>
+          <verifyInputWhenFocusTarget value="true"/>
+          <visible value="true"/>
+        </properties>
+      </component>
+      <component id="caaca" class="javax.swing.JButton" binding="CommonModeButton">
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="4" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="1" height="1"/>
+            <preferred-size width="200" height="100"/>
+            <maximum-size width="200" height="200"/>
+          </grid>
+        </constraints>
+        <properties>
+          <background color="-10185235"/>
+          <foreground color="-1776160"/>
+          <text value="普通模式"/>
+        </properties>
+      </component>
+      <component id="3a1b6" class="javax.swing.JButton" binding="HardModeButton">
+        <constraints>
+          <grid row="2" column="0" row-span="2" col-span="4" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="1" height="1"/>
+            <preferred-size width="200" height="100"/>
+            <maximum-size width="200" height="200"/>
+          </grid>
+        </constraints>
+        <properties>
+          <background color="-10185235"/>
+          <foreground color="-1776160"/>
+          <text value="困难模式"/>
+        </properties>
+      </component>
+      <component id="75a2e" class="javax.swing.JComboBox" binding="comboBox1" default-binding="true">
+        <constraints>
+          <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <minimum-size width="1" height="1"/>
+            <preferred-size width="100" height="25"/>
+            <maximum-size width="200" height="200"/>
+          </grid>
+        </constraints>
+        <properties>
+          <model>
+            <item value="开"/>
+            <item value="关"/>
+          </model>
+        </properties>
+      </component>
+      <component id="957bd" class="javax.swing.JLabel" binding="Label1">
+        <constraints>
+          <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false">
+            <minimum-size width="1" height="1"/>
+            <preferred-size width="30" height="20"/>
+            <maximum-size width="200" height="200"/>
+          </grid>
+        </constraints>
+        <properties>
+          <horizontalAlignment value="2"/>
+          <text value="音乐"/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+</form>
