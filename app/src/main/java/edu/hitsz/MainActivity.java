@@ -21,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
 
 
             System.out.print("hello，damn，man 赫尔饿死");
+
+            System.out.print("666");
             return insets;
         });
     }
