@@ -1,5 +1,6 @@
 package edu.hitsz.application;
 
+import android.content.Context;
 import edu.hitsz.aircraft.*;
 import edu.hitsz.bullet.BaseBullet;
 import edu.hitsz.basic.AbstractFlyingObject;
@@ -12,23 +13,28 @@ import edu.hitsz.prop.PropBullet;
 import edu.hitsz.scorerecord.*;
 
 import java.util.Date;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import edu.hitsz.aircraft.factory.*;
 import edu.hitsz.prop.factory.*;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.view.MotionEvent;
 
 /**
  * 游戏主面板，游戏启动
  *
  * @author hitsz
  */
-public abstract class Game extends JPanel {
+public abstract class Game extends BaseGame {
+
+    // ===== 屏幕尺寸常量（替代原Main类） =====
+    public static final int SCREEN_WIDTH = 512;
+    public static final int SCREEN_HEIGHT = 768;
 
     private int backGroundTop = 0;
 
@@ -89,37 +95,53 @@ public abstract class Game extends JPanel {
     private MusicThread bossBgmThread;
 
 
-    public Game() {
-        enemyAircrafts = new LinkedList<>();
-        heroBullets = new LinkedList<>();
-        enemyBullets = new LinkedList<>();
-        props = new LinkedList<>();
-
-
-
-        /**
-         * Scheduled 线程池，用于定时任务调度
-         * 关于alibaba code guide：可命名的 ThreadFactory 一般需要第三方包
-         * apache 第三方库： org.apache.commons.lang3.concurrent.BasicThreadFactory
-         */
-        this.executorService = new ScheduledThreadPoolExecutor(1,
-                new BasicThreadFactory.Builder().namingPattern("game-action-%d").daemon(true).build());
-
-        // 初始化难度参数（模板方法：子类实现）
-        initDifficultyParams();
-
-        heroAircraft = HeroAircraftSingleton.getInstance();
-
-        // 设置英雄初始血量
-        heroAircraft.setHp(heroInitialHp);
-
-        //启动英雄机鼠标监听
-        new HeroController(this, heroAircraft);
+    public Game(Context context) {
+        super(context);
         
-        // 开始播放背景音乐
-        if (DifficultySelection.isMusicOn()) {
-            bgmThread = new MusicThread("src/videos/bgm.wav", true);
-            bgmThread.start();
+        try {
+            System.out.println("Game 构造函数开始...");
+            
+            enemyAircrafts = new LinkedList<>();
+            heroBullets = new LinkedList<>();
+            enemyBullets = new LinkedList<>();
+            props = new LinkedList<>();
+
+            /**
+             * Scheduled 线程池，用于定时任务调度
+             * 使用简单的 ThreadFactory 实现（兼容 Android）
+             */
+            final int[] threadCount = {0};
+            ThreadFactory namedThreadFactory = r -> {
+                Thread t = new Thread(r);
+                t.setName("game-action-" + (++threadCount[0]));
+                t.setDaemon(true);
+                return t;
+            };
+            this.executorService = new ScheduledThreadPoolExecutor(1, namedThreadFactory);
+            System.out.println("线程池创建成功");
+
+            // 初始化难度参数（模板方法：子类实现）
+            System.out.println("初始化难度参数...");
+            initDifficultyParams();
+            System.out.println("难度参数初始化完成: " + difficulty);
+
+            System.out.println("获取英雄机单例...");
+            heroAircraft = HeroAircraftSingleton.getInstance();
+            if (heroAircraft != null) {
+                System.out.println("英雄机单例获取成功");
+                // 设置英雄初始血量
+                heroAircraft.setHp(heroInitialHp);
+                System.out.println("英雄机初始血量设置: " + heroInitialHp);
+            } else {
+                System.err.println("英雄机单例为null！");
+            }
+
+            System.out.println("Game 构造函数完成");
+            
+        } catch (Exception e) {
+            System.err.println("Game 构造函数异常: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Game 初始化失败", e);
         }
     }
 
@@ -131,19 +153,27 @@ public abstract class Game extends JPanel {
 
     // === 模板方法：游戏主流程 ===
     public final void action() {
-        Runnable task = () -> {
+        System.out.println("action执行");
+        try {
+            // 检查基本条件
+            if (heroAircraft == null || gameOverFlag) {
+                return;
+            }
+
             time += timeInterval;
 
             if (timeCountAndNewCycleJudge()) {
                 AbstractEnemy newEnemy = generateEnemyLogic(enemyAircrafts.size(), score, timeInterval);
+                System.out.println("newEnemy = " + newEnemy);
                 if (newEnemy != null) {
+                    System.out.println("enemy image = " + newEnemy.getImage());
                     enemyAircrafts.add(newEnemy);
                     bombPublisher.addSubscriber((BombSubscriber) newEnemy);
-                    if (newEnemy instanceof Boss && DifficultySelection.isMusicOn()) {
-                        stopAllMusic();
-                        bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
-                        bossBgmThread.start();
-                    }
+                    // if (newEnemy instanceof Boss && DifficultySelection.isMusicOn()) {
+                    //     stopAllMusic();
+                    //     bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
+                    //     bossBgmThread.start();
+                    // }
                 }
             }
             // 敌机射出子弹
@@ -162,14 +192,16 @@ public abstract class Game extends JPanel {
             crashCheckAction();
 
             // 英雄机碰撞道具
-            for (AbstractProp prop : props) {
-                prop.forward();
-                if (!prop.notValid() && heroAircraft.crash(prop)) {
-                    // 播放道具音效
-                    if (DifficultySelection.isMusicOn()) {
-                        new MusicThread("src/videos/get_supply.wav").start();
+            if (heroAircraft != null) {
+                for (AbstractProp prop : props) {
+                    prop.forward();
+                    if (!prop.notValid() && heroAircraft.crash(prop)) {
+                        // 播放道具音效
+                        // if (DifficultySelection.isMusicOn()) {
+                        //     new MusicThread("src/videos/get_supply.wav").start();
+                        // }
+                        prop.effect(heroAircraft);
                     }
-                    prop.effect(heroAircraft);
                 }
             }
             // 处理被炸弹道具击毁的敌机的加分
@@ -178,46 +210,22 @@ public abstract class Game extends JPanel {
             // 后处理
             postProcessAction();
 
-            //每个时刻重绘界面
-            repaint();
-
             // 游戏结束检查英雄机是否存活
-            if (heroAircraft.getHp() <= 0) {
+            if (heroAircraft != null && heroAircraft.getHp() <= 0) {
                 // 游戏结束
-                executorService.shutdown();
                 gameOverFlag = true;
                 System.out.println("Game Over!");
 
                 // 停止所有音乐并播放游戏结束音效
                 stopAllMusic();
-                if (DifficultySelection.isMusicOn()) {
-                    new MusicThread("src/videos/game_over.wav").start();
-                }
-
-                // 获取用户名
-                String playerName = JOptionPane.showInputDialog(this, "游戏结束，请输入名字：", "游戏结束", JOptionPane.PLAIN_MESSAGE);
-                if (playerName == null || playerName.trim().isEmpty()) {
-                    playerName = "匿名玩家";
-                }
-
-                // 记录得分
-                ScoreDao scoreDao = new ScoreDaoImpl(difficulty);
-                scoreDao.addRecord(new ScoreRecord(playerName, score, new Date()));
-                scoreDao.printRankList();
-
-                // 显示排行榜
-                Table table = new Table(difficulty);
-                table.setVisible(true);
+                // if (DifficultySelection.isMusicOn()) {
+                //     new MusicThread("src/videos/game_over.wav").start();
+                // }
             }
-
-        };
-
-        /**
-         * 以固定延迟时间进行执行
-         * 本次任务执行完成后，需要延迟设定的延迟时间，才会执行新的任务
-         */
-        executorService.scheduleWithFixedDelay(task, timeInterval, timeInterval, TimeUnit.MILLISECONDS);
-
+        } catch (Exception e) {
+            System.err.println("游戏逻辑出错: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     //***********************
@@ -310,9 +318,9 @@ public abstract class Game extends JPanel {
                 if (heroAircraft.getHp() <= 0) {
                     // 停止所有背景音乐并播放死亡音效
                     stopAllMusic();
-                    if (DifficultySelection.isMusicOn()) {
-                        new MusicThread("src/videos/game_over.wav").start();
-                    }
+                    // if (DifficultySelection.isMusicOn()) {
+                    //     new MusicThread("src/videos/game_over.wav").start();
+                    // }
                 }
             }
         }
@@ -335,9 +343,9 @@ public abstract class Game extends JPanel {
                     bullet.vanish();
                     if (enemyAircraft.notValid()) {
                         // 播放击中音效
-                        if (DifficultySelection.isMusicOn()) {
-                            new MusicThread("src/videos/bullet_hit.wav").start();
-                        }
+                        // if (DifficultySelection.isMusicOn()) {
+                        //     new MusicThread("src/videos/bullet_hit.wav").start();
+                        // }
                         score += 10;
 
                         int propX = enemyAircraft.getLocationX();
@@ -414,9 +422,9 @@ public abstract class Game extends JPanel {
                     }
 
                     // 2) 播放击毁音效
-                    if (DifficultySelection.isMusicOn()) {
-                        new MusicThread("src/videos/bullet_hit.wav").start();
-                    }
+                    // if (DifficultySelection.isMusicOn()) {
+                    //     new MusicThread("src/videos/bullet_hit.wav").start();
+                    // }
 
                     // 3) 从炸弹发布者中注销该敌机（避免残留）
                     try {
@@ -470,64 +478,133 @@ public abstract class Game extends JPanel {
 
 
     //***********************
-    //      Paint 各部分
+    //      Android绘制
     //***********************
 
     /**
-     * 重写paint方法
-     * 通过重复调用paint方法，实现游戏动画
+     * 实现BaseGame的drawGame方法
+     * 绘制游戏画面
      *
-     * @param  g
+     * @param canvas Android画布
      */
     @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+    protected void drawGame(Canvas canvas) {
+        try {
+            // 绘制背景,图片滚动
+            android.graphics.Bitmap bgBitmap = ImageManager.BACKGROUND_IMAGE;
+            if (bgBitmap != null) {
+                canvas.drawBitmap(bgBitmap, 0, this.backGroundTop - screenHeight, null);
+                canvas.drawBitmap(bgBitmap, 0, this.backGroundTop, null);
+            }
+            this.backGroundTop += 1;
+            if (this.backGroundTop == screenHeight) {
+                this.backGroundTop = 0;
+            }
 
-        // 绘制背景,图片滚动
-        g.drawImage(ImageManager.BACKGROUND_IMAGE, 0, this.backGroundTop - Main.WINDOW_HEIGHT, null);
-        g.drawImage(ImageManager.BACKGROUND_IMAGE, 0, this.backGroundTop, null);
-        this.backGroundTop += 1;
-        if (this.backGroundTop == Main.WINDOW_HEIGHT) {
-            this.backGroundTop = 0;
+            // 先绘制子弹，后绘制飞机
+            // 这样子弹显示在飞机的下层
+            drawImageWithPositionRevised(canvas, enemyBullets);
+            drawImageWithPositionRevised(canvas, heroBullets);
+
+            drawImageWithPositionRevised(canvas, enemyAircrafts);
+            drawImageWithPositionRevised(canvas, props);
+
+            // 绘制英雄机
+            if (heroAircraft != null) {
+                android.graphics.Bitmap heroBitmap = ImageManager.HERO_IMAGE;
+                if (heroBitmap != null) {
+                    canvas.drawBitmap(heroBitmap, 
+                        heroAircraft.getLocationX() - heroBitmap.getWidth() / 2,
+                        heroAircraft.getLocationY() - heroBitmap.getHeight() / 2, null);
+                }
+            }
+
+            // 绘制得分和生命值
+            drawScoreAndLife(canvas);
+        } catch (Exception e) {
+            System.err.println("drawGame 异常: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        // 先绘制子弹，后绘制飞机
-        // 这样子弹显示在飞机的下层
-        paintImageWithPositionRevised(g, enemyBullets);
-        paintImageWithPositionRevised(g, heroBullets);
-
-        paintImageWithPositionRevised(g, enemyAircrafts);
-        paintImageWithPositionRevised(g, props);
-
-        g.drawImage(ImageManager.HERO_IMAGE, heroAircraft.getLocationX() - ImageManager.HERO_IMAGE.getWidth() / 2,
-                heroAircraft.getLocationY() - ImageManager.HERO_IMAGE.getHeight() / 2, null);
-
-        //绘制得分和生命值
-        paintScoreAndLife(g);
-
     }
 
-    private void paintImageWithPositionRevised(Graphics g, List<? extends AbstractFlyingObject> objects) {
+    private void drawImageWithPositionRevised(Canvas canvas, List<? extends AbstractFlyingObject> objects) {
         if (objects.size() == 0) {
             return;
         }
 
         for (AbstractFlyingObject object : objects) {
-            BufferedImage image = object.getImage();
-            assert image != null : objects.getClass().getName() + " has no image! ";
-            g.drawImage(image, object.getLocationX() - image.getWidth() / 2,
+            android.graphics.Bitmap image = object.getImage();
+            if (image != null) {
+                canvas.drawBitmap(image,
+                    object.getLocationX() - image.getWidth() / 2,
                     object.getLocationY() - image.getHeight() / 2, null);
+            }
         }
     }
 
-    private void paintScoreAndLife(Graphics g) {
+    private void drawScoreAndLife(Canvas canvas) {
         int x = 10;
         int y = 25;
-        g.setColor(new Color(16711680));
-        g.setFont(new Font("SansSerif", Font.BOLD, 22));
-        g.drawString("SCORE:" + this.score, x, y);
+        Paint paint = new Paint();
+        paint.setColor(Color.RED);
+        paint.setTextSize(22);
+        paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        
+        canvas.drawText("SCORE:" + this.score, x, y, paint);
         y = y + 20;
-        g.drawString("LIFE:" + this.heroAircraft.getHp(), x, y);
+        canvas.drawText("LIFE:" + this.heroAircraft.getHp(), x, y, paint);
+    }
+
+    //***********************
+    //      游戏更新逻辑
+    //***********************
+
+    /**
+     * 实现BaseGame的update方法
+     * 更新游戏逻辑（敌机、子弹、碰撞等）
+     */
+    @Override
+    protected void update() {
+        // 执行游戏主要逻辑（每帧同步调用）
+        if (!gameOverFlag && heroAircraft != null) {
+            try {
+                action();
+            } catch (Exception e) {
+                System.err.println("游戏逻辑执行出错: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 实现BaseGame的initializeGameParams方法
+     * 初始化游戏参数（由子类实现具体难度参数）
+     */
+    @Override
+    protected void initializeGameParams() {
+        // 调用抽象方法，由子类实现难度相关参数初始化
+        initDifficultyParams();
+    }
+
+    /**
+     * 实现BaseGame的onTouchEventHandle方法
+     * 处理Android触屏输入事件，控制英雄机移动
+     */
+    @Override
+    protected void onTouchEventHandle(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+            // 获取触屏坐标
+            float x = event.getX();
+            float y = event.getY();
+            
+            // 检查边界，防止超出屏幕范围
+            if (x >= 0 && x <= screenWidth && y >= 0 && y <= screenHeight) {
+                // 将触屏坐标传递给英雄机
+                if (heroAircraft != null) {
+                    heroAircraft.setLocation((int) x, (int) y);
+                }
+            }
+        }
     }
 
     /**
@@ -548,43 +625,45 @@ public abstract class Game extends JPanel {
      * 播放游戏音效
      */
     private void playSound(String filename) {
-        if (DifficultySelection.isMusicOn()) {
-            new MusicThread(filename).start();
-        }
+        // if (DifficultySelection.isMusicOn()) {
+        //     new MusicThread(filename).start();
+        // }
     }
 
     /**
      * 播放背景音乐
      */
     private synchronized void playBgm() {
-        if (!DifficultySelection.isMusicOn()) {
-            return;
-        }
-        if (bgmThread != null) {
-            bgmThread.stopAndClose();
-        }
-        bgmThread = new MusicThread("src/videos/bgm.wav", true);
-        bgmThread.start();
+        // 暂时注释掉背景音乐播放
+        // if (!DifficultySelection.isMusicOn()) {
+        //     return;
+        // }
+        // if (bgmThread != null) {
+        //     bgmThread.stopAndClose();
+        // }
+        // bgmThread = new MusicThread("src/videos/bgm.wav", true);
+        // bgmThread.start();
     }
 
     /**
      * 播放Boss音乐
      */
     private synchronized void playBossBgm() {
-        if (!DifficultySelection.isMusicOn()) {
-            return;
-        }
-        // 停止普通背景音乐
-        if (bgmThread != null) {
-            bgmThread.stopAndClose();
-            bgmThread = null;
-        }
-        // 播放Boss音乐
-        if (bossBgmThread != null) {
-            bossBgmThread.stopAndClose();
-        }
-        bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
-        bossBgmThread.start();
+        // if (!DifficultySelection.isMusicOn()) {
+        //     return;
+        // }
+        // 暂时注释掉Boss音乐播放
+        // // 停止普通背景音乐
+        // if (bgmThread != null) {
+        //     bgmThread.stopAndClose();
+        //     bgmThread = null;
+        // }
+        // // 播放Boss音乐
+        // if (bossBgmThread != null) {
+        //     bossBgmThread.stopAndClose();
+        // }
+        // bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
+        // bossBgmThread.start();
     }
 
 

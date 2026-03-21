@@ -1,6 +1,5 @@
 package edu.hitsz.bullet;
 
-import edu.hitsz.application.Main;
 import edu.hitsz.basic.AbstractFlyingObject;
 
 /**
@@ -23,12 +22,12 @@ public abstract class BaseBullet extends AbstractFlyingObject {
         super.forward();
 
         // 判定 x 轴出界
-        if (locationX <= 0 || locationX >= Main.WINDOW_WIDTH) {
+        if (locationX <= 0 || locationX >= edu.hitsz.application.Game.SCREEN_WIDTH) {
             vanish();
         }
 
         // 判定 y 轴出界
-        if (speedY > 0 && locationY >= Main.WINDOW_HEIGHT ) {
+        if (speedY > 0 && locationY >= edu.hitsz.application.Game.SCREEN_HEIGHT ) {
             // 向下飞行出界
             vanish();
         }else if (locationY <= 0){

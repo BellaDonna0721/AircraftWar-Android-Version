@@ -17,7 +17,7 @@ public abstract class AbstractProp extends AbstractFlyingObject {
     public void forward() {
         locationY += speedY;
         // 超出屏幕底部消失
-        if (locationY >= edu.hitsz.application.Main.WINDOW_HEIGHT) {
+        if (locationY >= edu.hitsz.application.Game.SCREEN_HEIGHT) {
             vanish();
         }
     }

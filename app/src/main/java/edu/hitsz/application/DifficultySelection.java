@@ -1,19 +1,10 @@
 package edu.hitsz.application;
 
-import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-
+/**
+ * Android 版本难度选择管理器
+ * 原始 Swing 版本已改为 Android 兼容版本
+ */
 public class DifficultySelection {
-    private JPanel Main;
-    private JButton SimpleModeButton;
-    private JButton CommonModeButton;
-    private JButton HardModeButton;
-    private JComboBox comboBox1;
-    private JLabel Label1;
-    private JFrame frame;
     
     // 定义难度常量
     public static final int SIMPLE = 0;
@@ -23,64 +14,27 @@ public class DifficultySelection {
     private static int difficulty = SIMPLE; // 默认简单模式
     private static boolean musicOn = true;  // 默认音乐开启
 
-    public DifficultySelection(JFrame frame) {
-        this.frame = frame;
-
-        SimpleModeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                difficulty = SIMPLE;
-                startGame();
-            }
-        });
-        CommonModeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                difficulty = COMMON;
-                startGame();
-            }
-        });
-        HardModeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                difficulty = HARD;
-                startGame();
-            }
-        });
-        comboBox1.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                if(e.getStateChange() == ItemEvent.SELECTED) {
-                    musicOn = e.getItem().toString().equals("开");
-                }
-            }
-        });
+    public DifficultySelection() {
+        // 无参构造器用于 Android 版本
     }
 
-    private void createUIComponents() {
-        // TODO: place custom component creation code here
+    /**
+     * 设置难度
+     */
+    public static void setDifficulty(int diff) {
+        difficulty = diff;
     }
 
-    private void startGame() {
-        // 根据难度选择设置背景
-        switch (difficulty) {
-            case SIMPLE:
-                ImageManager.BACKGROUND_IMAGE = ImageManager.BACKGROUND_IMAGE;
-                break;
-            case COMMON:
-                ImageManager.BACKGROUND_IMAGE = ImageManager.BACKGROUND_IMAGE2;
-                break;
-            case HARD:
-                ImageManager.BACKGROUND_IMAGE = ImageManager.BACKGROUND_IMAGE3;
-                break;
-        }
-        frame.dispose(); // 关闭难度选择窗口
-    }
-
+    /**
+     * 获取选中的难度
+     */
     public static int getSelectedDifficulty() {
         return difficulty;
     }
 
+    /**
+     * 获取难度描述
+     */
     public String getSelectedDifficultyDescription() {
         switch (difficulty) {
             case SIMPLE:
@@ -94,11 +48,17 @@ public class DifficultySelection {
         }
     }
 
+    /**
+     * 是否开启音乐
+     */
     public static boolean isMusicOn() {
         return musicOn;
     }
 
-    public JPanel getMainPanel() {
-        return Main;
+    /**
+     * 设置音乐状态
+     */
+    public static void setMusicOn(boolean on) {
+        musicOn = on;
     }
 }

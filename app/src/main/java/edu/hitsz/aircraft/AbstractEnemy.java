@@ -1,6 +1,5 @@
 package edu.hitsz.aircraft;
 
-import edu.hitsz.application.Main;
 import edu.hitsz.bullet.BaseBullet;
 
 import java.util.List;
@@ -35,7 +34,7 @@ public abstract class AbstractEnemy extends AbstractAircraft {
     public void forward() {
         super.forward();
         // 敌机通用：飞出下边界即消失
-        if (locationY >= Main.WINDOW_HEIGHT) {
+        if (locationY >= edu.hitsz.application.Game.SCREEN_HEIGHT) {
             vanish();
         }
     }

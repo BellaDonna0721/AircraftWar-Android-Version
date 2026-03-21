@@ -1,9 +1,14 @@
 package edu.hitsz.application.GameExtend;
 
+import android.content.Context;
 import edu.hitsz.aircraft.AbstractEnemy;
 import edu.hitsz.application.Game;
 
 public class NormalGame extends Game {
+    public NormalGame(Context context) {
+        super(context);
+    }
+
     @Override
     protected void initDifficultyParams() {
         difficulty = "Normal";

@@ -1,10 +1,16 @@
 package edu.hitsz.application.GameExtend;
 
+import android.content.Context;
 import edu.hitsz.aircraft.AbstractEnemy;
 import edu.hitsz.aircraft.HeroAircraft;
 import edu.hitsz.application.Game;
 
 public class EasyGame extends Game {
+    
+    public EasyGame(Context context) {
+        super(context);
+    }
+    
     @Override
     protected void initDifficultyParams() {
         difficulty = "Easy";

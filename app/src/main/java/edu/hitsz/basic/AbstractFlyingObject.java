@@ -2,9 +2,8 @@ package edu.hitsz.basic;
 
 import edu.hitsz.aircraft.AbstractAircraft;
 import edu.hitsz.application.ImageManager;
-import edu.hitsz.application.Main;
 
-import java.awt.image.BufferedImage;
+import android.graphics.Bitmap;
 
 /**
  * 可飞行对象的父类
@@ -39,7 +38,7 @@ public abstract class AbstractFlyingObject {
      * 图片,
      * null 表示未设置
      */
-    protected BufferedImage image = null;
+    protected Bitmap image = null;
 
     /**
      * x 轴长度，根据图片尺寸获得
@@ -77,7 +76,7 @@ public abstract class AbstractFlyingObject {
     public void forward() {
         locationX += speedX;
         locationY += speedY;
-        if (locationX <= 0 || locationX >= Main.WINDOW_WIDTH) {
+        if (locationX <= 0 || locationX >= edu.hitsz.application.Game.SCREEN_WIDTH) {
             // 横向超出边界后反向
             speedX = -speedX;
         }
@@ -136,7 +135,7 @@ public abstract class AbstractFlyingObject {
         return speedX;
     }
 
-    public BufferedImage getImage() {
+    public Bitmap getImage() {
         if (image == null){
             image = ImageManager.get(this);
         }
@@ -146,7 +145,18 @@ public abstract class AbstractFlyingObject {
     public int getWidth() {
         if (width == -1){
             // 若未设置，则查询图片宽度并设置
-            width = ImageManager.get(this).getWidth();
+            try {
+                Bitmap img = ImageManager.get(this);
+                if (img != null) {
+                    width = img.getWidth();
+                } else {
+                    // 图片未加载，使用默认宽度
+                    width = 50;
+                }
+            } catch (Exception e) {
+                System.err.println("getWidth 异常: " + e.getMessage());
+                width = 50;  // 使用默认宽度
+            }
         }
         return width;
     }
@@ -154,7 +164,18 @@ public abstract class AbstractFlyingObject {
     public int getHeight() {
         if (height == -1){
             // 若未设置，则查询图片高度并设置
-            height = ImageManager.get(this).getHeight();
+            try {
+                Bitmap img = ImageManager.get(this);
+                if (img != null) {
+                    height = img.getHeight();
+                } else {
+                    // 图片未加载，使用默认高度
+                    height = 50;
+                }
+            } catch (Exception e) {
+                System.err.println("getHeight 异常: " + e.getMessage());
+                height = 50;  // 使用默认高度
+            }
         }
         return height;
     }
