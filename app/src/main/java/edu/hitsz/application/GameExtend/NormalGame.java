@@ -29,8 +29,8 @@ public class NormalGame extends Game {
         enemyGenerator.setBossHp(300);
 
         heroShootCycle = 490;
-        eliteShootCycle = 400;
-        bossShootCycle = 1200;
+        eliteShootCycle = 800;
+        bossShootCycle = 1800;
         cycleDuration = 600;
         heroInitialHp = 1000;
     }

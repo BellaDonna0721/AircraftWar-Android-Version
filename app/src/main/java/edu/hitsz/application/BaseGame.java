@@ -77,6 +77,16 @@ public abstract class BaseGame extends SurfaceView
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         System.out.println("Surface 创建成功");
         mbLoop = true;
+        
+        // 获取实际屏幕尺寸并更新
+        screenWidth = getWidth();
+        screenHeight = getHeight();
+        Game.SCREEN_WIDTH = screenWidth;
+        Game.SCREEN_HEIGHT = screenHeight;
+        
+        // 初始化游戏参数（需要子类实现，可能依赖于屏幕尺寸）
+        initializeGameParams();
+        
         // 启动游戏绘制线程
         try {
             mDrawThread = new Thread(this);
@@ -96,6 +106,9 @@ public abstract class BaseGame extends SurfaceView
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
         screenWidth = width;
         screenHeight = height;
+        // 更新全局屏幕尺寸常量，以便飞行对象等逻辑使用
+        Game.SCREEN_WIDTH = width;
+        Game.SCREEN_HEIGHT = height;
     }
 
     /**
@@ -122,9 +135,10 @@ public abstract class BaseGame extends SurfaceView
     @Override
     public void run() {
         while (mbLoop) {
-            synchronized (mSurfaceHolder) {
-                drawFrame();
-            }
+            // 先更新逻辑，再进行绘制
+            update();
+            drawFrame();
+
             try {
                 Thread.sleep(timeInterval);
             } catch (Exception e) {
@@ -140,7 +154,7 @@ public abstract class BaseGame extends SurfaceView
     protected void drawFrame() {
         try {
             mCanvas = mSurfaceHolder.lockCanvas();
-            if (mSurfaceHolder == null || mCanvas == null) {
+            if (mCanvas == null) {
                 return;
             }
 
@@ -150,9 +164,6 @@ public abstract class BaseGame extends SurfaceView
 
             // 调用游戏的绘制逻辑（由子类实现或调用来自Game的逻辑）
             drawGame(mCanvas);
-
-            // 更新游戏逻辑
-            update();
 
         } catch (Exception e) {
             e.printStackTrace();

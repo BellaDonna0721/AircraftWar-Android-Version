@@ -31,8 +31,8 @@ public class EasyGame extends Game {
         enemyGenerator.setBossHp(60);                // boss机血量
 
         heroShootCycle = 600;                        // 英雄机射击周期
-        eliteShootCycle = 600;                       // （超级）精英敌机射击周期
-        bossShootCycle = 1500;                       // boss机射击周期
+        eliteShootCycle = 1000;                      // （超级）精英敌机射击周期
+        bossShootCycle = 2000;                       // boss机射击周期
         cycleDuration = 700;                         // 尝试生成敌机周期
         heroInitialHp = 1500;                        // 英雄机初始血量
     }

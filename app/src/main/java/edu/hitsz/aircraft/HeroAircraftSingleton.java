@@ -41,4 +41,17 @@ public class HeroAircraftSingleton {
         }
         return instance;
     }
+
+    /**
+     * 重置英雄机位置（用于屏幕尺寸变化后）
+     */
+    public static void resetInstancePosition(int screenWidth, int screenHeight) {
+        if (instance != null) {
+            int heroImageHeight = 0;
+            if (ImageManager.HERO_IMAGE != null) {
+                heroImageHeight = ImageManager.HERO_IMAGE.getHeight();
+            }
+            instance.setLocation(screenWidth / 2, screenHeight - heroImageHeight);
+        }
+    }
 }

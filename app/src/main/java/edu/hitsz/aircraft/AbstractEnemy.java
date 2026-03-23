@@ -14,8 +14,8 @@ public abstract class AbstractEnemy extends AbstractAircraft {
     
     public AbstractEnemy(int locationX, int locationY, int speedX, int speedY, int hp) {
         super(locationX, locationY, speedX, speedY, hp);
-        // 随机初始化射击计时器，这样敌机出场后就能在随机时间开始射击
-        this.shootTime = (int)(Math.random() * 400);  // 400是精英敌机的射击周期
+        // 随机初始化射击计时器，这样敌机出场后就能在随机时间开始射击，避免同一时间产生弹幕墙
+        this.shootTime = (int)(Math.random() * 600);
     }
     
     public void increaseShootTime(int increment) {

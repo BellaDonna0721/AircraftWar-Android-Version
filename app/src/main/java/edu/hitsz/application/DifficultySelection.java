@@ -11,7 +11,7 @@ public class DifficultySelection {
     public static final int COMMON = 1;
     public static final int HARD = 2;
     
-    private static int difficulty = SIMPLE; // 默认简单模式
+    private static int difficulty = COMMON; // 默认普通模式
     private static boolean musicOn = true;  // 默认音乐开启
 
     public DifficultySelection() {

@@ -30,8 +30,8 @@ public class HardGame extends Game {
         enemyGenerator.setBossHp(500);
 
         heroShootCycle = 400;
-        eliteShootCycle = 300;
-        bossShootCycle = 800;
+        eliteShootCycle = 600;
+        bossShootCycle = 1200;
         cycleDuration = 400;
         heroInitialHp = 800;
     }

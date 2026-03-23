@@ -9,7 +9,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import edu.hitsz.application.ImageManager;
 import edu.hitsz.application.BaseGame;
+import edu.hitsz.application.DifficultySelection;
+import edu.hitsz.application.GameExtend.EasyGame;
 import edu.hitsz.application.GameExtend.NormalGame;
+import edu.hitsz.application.GameExtend.HardGame;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,10 +31,24 @@ public class MainActivity extends AppCompatActivity {
             ImageManager.init(this);
             System.out.println("图片资源初始化完成");
 
-            // 创建游戏视图
-            System.out.println("创建游戏视图...");
-            mBaseGame = new NormalGame(this);
-            System.out.println("游戏视图创建完成");
+            // 根据 DifficultySelection 中的默认值创建对应游戏视图
+            int difficulty = DifficultySelection.getSelectedDifficulty();
+            System.out.println("当前选择难度: " + difficulty);
+            
+            switch (difficulty) {
+                case DifficultySelection.SIMPLE:
+                    mBaseGame = new EasyGame(this);
+                    break;
+                case DifficultySelection.COMMON:
+                    mBaseGame = new NormalGame(this);
+                    break;
+                case DifficultySelection.HARD:
+                    mBaseGame = new HardGame(this);
+                    break;
+                default:
+                    mBaseGame = new NormalGame(this);
+            }
+            System.out.println("游戏视图创建完成: " + mBaseGame.getClass().getSimpleName());
             
             setContentView(mBaseGame);
             System.out.println("ContentView 设置完成");

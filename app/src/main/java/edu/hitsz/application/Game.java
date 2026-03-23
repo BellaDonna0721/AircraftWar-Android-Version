@@ -33,8 +33,8 @@ import android.view.MotionEvent;
 public abstract class Game extends BaseGame {
 
     // ===== 屏幕尺寸常量（替代原Main类） =====
-    public static final int SCREEN_WIDTH = 512;
-    public static final int SCREEN_HEIGHT = 768;
+    public static int SCREEN_WIDTH = 512;
+    public static int SCREEN_HEIGHT = 768;
 
     private int backGroundTop = 0;
 
@@ -250,8 +250,9 @@ public abstract class Game extends BaseGame {
                 // Boss射击控制
                 if (bossShootTime >= bossShootCycle) {
                     bossShootTime = 0;
-                    enemyBullets.addAll(enemy.shoot());
-                    for (BaseBullet bullet : enemyBullets) {
+                    List<BaseBullet> newBullets = enemy.shoot();
+                    enemyBullets.addAll(newBullets);
+                    for (BaseBullet bullet : newBullets) {
                         bombPublisher.addSubscriber((BombSubscriber) bullet);
                     }
                 }
@@ -261,8 +262,9 @@ public abstract class Game extends BaseGame {
                 eliteEnemy.increaseShootTime(timeInterval);
                 if (eliteEnemy.getShootTime() >= eliteShootCycle) {
                     eliteEnemy.resetShootTime();
-                    enemyBullets.addAll(enemy.shoot());
-                    for (BaseBullet bullet : enemyBullets) {
+                    List<BaseBullet> newBullets = enemy.shoot();
+                    enemyBullets.addAll(newBullets);
+                    for (BaseBullet bullet : newBullets) {
                         bombPublisher.addSubscriber((BombSubscriber) bullet);
                     }
                 }
@@ -452,27 +454,30 @@ public abstract class Game extends BaseGame {
      * 无效的原因可能是撞击或者飞出边界
      */
     private void postProcessAction() {
-        // 注销无效的敌机订阅者
-        for (BaseBullet bullet : new ArrayList<>(enemyBullets)) {
+        // 使用迭代器统一处理无效对象的移除和订阅者的注销，减少内存分配
+        Iterator<BaseBullet> enemyBulletIterator = enemyBullets.iterator();
+        while (enemyBulletIterator.hasNext()) {
+            BaseBullet bullet = enemyBulletIterator.next();
             if (bullet.notValid()) {
-                try {
+                if (bullet instanceof BombSubscriber) {
                     bombPublisher.removeSubscriber((BombSubscriber) bullet);
-                } catch (ClassCastException ignored) {}
+                }
+                enemyBulletIterator.remove();
             }
         }
 
-        for (AbstractAircraft enemy : new ArrayList<>(enemyAircrafts)) {
+        Iterator<AbstractAircraft> enemyAircraftIterator = enemyAircrafts.iterator();
+        while (enemyAircraftIterator.hasNext()) {
+            AbstractAircraft enemy = enemyAircraftIterator.next();
             if (enemy.notValid()) {
-                try {
+                if (enemy instanceof BombSubscriber) {
                     bombPublisher.removeSubscriber((BombSubscriber) enemy);
-                } catch (ClassCastException ignored) {}
+                }
+                enemyAircraftIterator.remove();
             }
         }
 
-
-        enemyBullets.removeIf(AbstractFlyingObject::notValid);
         heroBullets.removeIf(AbstractFlyingObject::notValid);
-        enemyAircrafts.removeIf(AbstractFlyingObject::notValid);
         props.removeIf(AbstractFlyingObject::notValid);
     }
 
@@ -493,11 +498,18 @@ public abstract class Game extends BaseGame {
             // 绘制背景,图片滚动
             android.graphics.Bitmap bgBitmap = ImageManager.BACKGROUND_IMAGE;
             if (bgBitmap != null) {
-                canvas.drawBitmap(bgBitmap, 0, this.backGroundTop - screenHeight, null);
-                canvas.drawBitmap(bgBitmap, 0, this.backGroundTop, null);
+                // 使用Rect进行拉伸绘制，适配屏幕尺寸
+                android.graphics.Rect src = new android.graphics.Rect(0, 0, bgBitmap.getWidth(), bgBitmap.getHeight());
+                
+                // 绘制两张背景图片实现循环滚动
+                android.graphics.Rect dst1 = new android.graphics.Rect(0, this.backGroundTop - screenHeight, screenWidth, this.backGroundTop);
+                android.graphics.Rect dst2 = new android.graphics.Rect(0, this.backGroundTop, screenWidth, this.backGroundTop + screenHeight);
+                
+                canvas.drawBitmap(bgBitmap, src, dst1, null);
+                canvas.drawBitmap(bgBitmap, src, dst2, null);
             }
-            this.backGroundTop += 1;
-            if (this.backGroundTop == screenHeight) {
+            this.backGroundTop += 2; // 适当加快背景滚动速度，更丝滑
+            if (this.backGroundTop >= screenHeight) {
                 this.backGroundTop = 0;
             }
 
@@ -543,15 +555,15 @@ public abstract class Game extends BaseGame {
     }
 
     private void drawScoreAndLife(Canvas canvas) {
-        int x = 10;
-        int y = 25;
+        int x = 20;
+        int y = 50;
         Paint paint = new Paint();
         paint.setColor(Color.RED);
-        paint.setTextSize(22);
+        paint.setTextSize(40);
         paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         
         canvas.drawText("SCORE:" + this.score, x, y, paint);
-        y = y + 20;
+        y = y + 50;
         canvas.drawText("LIFE:" + this.heroAircraft.getHp(), x, y, paint);
     }
 
@@ -582,6 +594,9 @@ public abstract class Game extends BaseGame {
      */
     @Override
     protected void initializeGameParams() {
+        // 更新英雄机位置以适应新屏幕尺寸
+        HeroAircraftSingleton.resetInstancePosition(screenWidth, screenHeight);
+        
         // 调用抽象方法，由子类实现难度相关参数初始化
         initDifficultyParams();
     }
