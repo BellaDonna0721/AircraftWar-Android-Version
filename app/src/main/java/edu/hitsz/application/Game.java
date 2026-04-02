@@ -24,6 +24,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
+import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.media.AudioAttributes;
+import android.util.SparseIntArray;
 
 /**
  * 游戏主面板，游戏启动
@@ -90,9 +94,12 @@ public abstract class Game extends BaseGame {
     // 敌机生成器
     protected final EnemyGenerator enemyGenerator = new EnemyGenerator();
 
-    // 音乐线程
-    private MusicThread bgmThread;
-    private MusicThread bossBgmThread;
+    // Android 音频播放器：MediaPlayer用于BGM，SoundPool用于短音效
+    private MediaPlayer bgmPlayer;
+    private MediaPlayer bossBgmPlayer;
+    private SoundPool soundPool;
+    private final SparseIntArray soundIdMap = new SparseIntArray();
+    private final Context appContext;
 
 
     public Game(Context context) {
@@ -137,6 +144,11 @@ public abstract class Game extends BaseGame {
             }
 
             System.out.println("Game 构造函数完成");
+            // 保存应用级 Context 并初始化短音效池
+            this.appContext = context.getApplicationContext();
+            initSoundPool();
+            // 启动普通背景音乐
+            playBgm();
             
         } catch (Exception e) {
             System.err.println("Game 构造函数异常: " + e.getMessage());
@@ -169,11 +181,10 @@ public abstract class Game extends BaseGame {
                     System.out.println("enemy image = " + newEnemy.getImage());
                     enemyAircrafts.add(newEnemy);
                     bombPublisher.addSubscriber((BombSubscriber) newEnemy);
-                    // if (newEnemy instanceof Boss && DifficultySelection.isMusicOn()) {
-                    //     stopAllMusic();
-                    //     bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
-                    //     bossBgmThread.start();
-                    // }
+                    if (newEnemy instanceof Boss) {
+                        // 切换到Boss背景音乐
+                        playBossBgm();
+                    }
                 }
             }
             // 敌机射出子弹
@@ -358,11 +369,15 @@ public abstract class Game extends BaseGame {
                         // ====== 新增逻辑：Boss掉落多个道具 ======
                         if (enemyAircraft instanceof Boss) {
                             // Boss被击毁，切换回普通背景音乐
-                            if (bossBgmThread != null) {
-                                bossBgmThread.stopAndClose();
-                                bossBgmThread = null;
-                                playBgm();
+                            try {
+                                if (bossBgmPlayer != null) {
+                                    if (bossBgmPlayer.isPlaying()) bossBgmPlayer.stop();
+                                    bossBgmPlayer.release();
+                                    bossBgmPlayer = null;
+                                }
+                            } catch (Exception ignored) {
                             }
+                            playBgm();
                             int propCount = (int) (Math.random() * 3) + 1; // 随机掉落1~3个
                             System.out.println("Boss 被击毁！掉落 " + propCount + " 个道具！");
                             for (int i = 0; i < propCount; i++) {
@@ -626,13 +641,29 @@ public abstract class Game extends BaseGame {
      * 停止所有音乐
      */
     private void stopAllMusic() {
-        if (bgmThread != null) {
-            bgmThread.stopMusic();
-            bgmThread = null;
+        try {
+            if (bgmPlayer != null) {
+                if (bgmPlayer.isPlaying()) bgmPlayer.stop();
+                bgmPlayer.release();
+                bgmPlayer = null;
+            }
+        } catch (Exception ignored) {
         }
-        if (bossBgmThread != null) {
-            bossBgmThread.stopMusic();
-            bossBgmThread = null;
+        try {
+            if (bossBgmPlayer != null) {
+                if (bossBgmPlayer.isPlaying()) bossBgmPlayer.stop();
+                bossBgmPlayer.release();
+                bossBgmPlayer = null;
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            if (soundPool != null) {
+                soundPool.release();
+                soundPool = null;
+            }
+            soundIdMap.clear();
+        } catch (Exception ignored) {
         }
     }
 
@@ -640,45 +671,137 @@ public abstract class Game extends BaseGame {
      * 播放游戏音效
      */
     private void playSound(String filename) {
-        // if (DifficultySelection.isMusicOn()) {
-        //     new MusicThread(filename).start();
-        // }
+        // 简单映射：兼容原先传入的 "src/videos/*.wav" 路径，也支持直接传入资源关键字
+        if (filename == null || filename.isEmpty()) return;
+        String key = filename;
+        if (filename.contains("bullet_hit") || filename.contains("bullet_hit.wav")) {
+            key = "bullet_hit";
+        } else if (filename.contains("bullet.wav") || filename.contains("bullet_shoot")) {
+            key = "bullet_shoot";
+        } else if (filename.contains("boom") || filename.contains("explosion")) {
+            key = "explosion_boom";
+        } else if (filename.contains("game_over")) {
+            key = "game_over";
+        } else if (filename.contains("get_supply")) {
+            key = "get_supply";
+        }
+
+        // 通过资源名加载 short effect（期望位于 res/raw 下，例如 res/raw/bullet_shoot.wav）
+        int resId = getResIdByName(key);
+        if (resId != 0) {
+            playShortEffect(resId);
+        }
     }
 
     /**
      * 播放背景音乐
      */
     private synchronized void playBgm() {
-        // 暂时注释掉背景音乐播放
-        // if (!DifficultySelection.isMusicOn()) {
-        //     return;
-        // }
-        // if (bgmThread != null) {
-        //     bgmThread.stopAndClose();
-        // }
-        // bgmThread = new MusicThread("src/videos/bgm.wav", true);
-        // bgmThread.start();
+        try {
+            // stop boss bgm if playing
+            if (bossBgmPlayer != null) {
+                if (bossBgmPlayer.isPlaying()) bossBgmPlayer.stop();
+                bossBgmPlayer.release();
+                bossBgmPlayer = null;
+            }
+            if (bgmPlayer != null) {
+                if (bgmPlayer.isPlaying()) return; // already playing
+                bgmPlayer.release();
+                bgmPlayer = null;
+            }
+            int resId = getResIdByName("bgm");
+            if (resId != 0) {
+                bgmPlayer = MediaPlayer.create(appContext, resId);
+                if (bgmPlayer != null) {
+                    bgmPlayer.setLooping(true);
+                    bgmPlayer.start();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("playBgm error: " + e.getMessage());
+        }
     }
 
     /**
      * 播放Boss音乐
      */
     private synchronized void playBossBgm() {
-        // if (!DifficultySelection.isMusicOn()) {
-        //     return;
-        // }
-        // 暂时注释掉Boss音乐播放
-        // // 停止普通背景音乐
-        // if (bgmThread != null) {
-        //     bgmThread.stopAndClose();
-        //     bgmThread = null;
-        // }
-        // // 播放Boss音乐
-        // if (bossBgmThread != null) {
-        //     bossBgmThread.stopAndClose();
-        // }
-        // bossBgmThread = new MusicThread("src/videos/bgm_boss.wav", true);
-        // bossBgmThread.start();
+        try {
+            // stop normal bgm
+            if (bgmPlayer != null) {
+                if (bgmPlayer.isPlaying()) bgmPlayer.stop();
+                bgmPlayer.release();
+                bgmPlayer = null;
+            }
+            if (bossBgmPlayer != null) {
+                if (bossBgmPlayer.isPlaying()) return;
+                bossBgmPlayer.release();
+                bossBgmPlayer = null;
+            }
+            int resId = getResIdByName("bgm_boss");
+            if (resId != 0) {
+                bossBgmPlayer = MediaPlayer.create(appContext, resId);
+                if (bossBgmPlayer != null) {
+                    bossBgmPlayer.setLooping(true);
+                    bossBgmPlayer.start();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("playBossBgm error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 初始化SoundPool并预加载常用短音效（如果资源存在）
+     */
+    private void initSoundPool() {
+        try {
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            soundPool = new SoundPool.Builder()
+                    .setMaxStreams(6)
+                    .setAudioAttributes(attrs)
+                    .build();
+
+            // 预加载常见短音效，资源名期望位于 res/raw
+            String[] names = new String[]{"bullet_shoot", "bullet_hit", "explosion_boom", "game_over", "get_supply"};
+            for (String n : names) {
+                int resId = getResIdByName(n);
+                if (resId != 0) {
+                    int soundId = soundPool.load(appContext, resId, 1);
+                    soundIdMap.put(resId, soundId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("initSoundPool error: " + e.getMessage());
+        }
+    }
+
+    private int getResIdByName(String name) {
+        if (name == null || name.isEmpty() || appContext == null) return 0;
+        int resId = appContext.getResources().getIdentifier(name, "raw", appContext.getPackageName());
+        return resId;
+    }
+
+    private void playShortEffect(int resId) {
+        if (soundPool == null) {
+            initSoundPool();
+            if (soundPool == null) return;
+        }
+        try {
+            int soundId = soundIdMap.get(resId, 0);
+            if (soundId == 0) {
+                soundId = soundPool.load(appContext, resId, 1);
+                if (soundId != 0) soundIdMap.put(resId, soundId);
+            }
+            if (soundId != 0) {
+                soundPool.play(soundId, 1.0f, 1.0f, 1, 0, 1.0f);
+            }
+        } catch (Exception e) {
+            System.err.println("playShortEffect error: " + e.getMessage());
+        }
     }
 
 
