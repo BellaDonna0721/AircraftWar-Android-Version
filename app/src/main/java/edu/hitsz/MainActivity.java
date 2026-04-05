@@ -6,6 +6,9 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import edu.hitsz.activity.DifficultyActivity;
+import edu.hitsz.application.DifficultySelection;
+import android.widget.Switch;
+import android.media.MediaPlayer;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -13,6 +16,29 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 初始化音乐开关状态
+        Switch switchMusic = findViewById(R.id.switch_music);
+        if (switchMusic != null) {
+            // 反转逻辑：确保 Switch 勾选状态对应“有声音”这一直觉行为
+            switchMusic.setChecked(DifficultySelection.isMusicOn());
+            switchMusic.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                // isChecked = 用户界面上的状态（勾选表示希望有声音）
+                boolean newMusicOn = isChecked;
+                DifficultySelection.setMusicOn(newMusicOn);
+                // 当实际开启音效时，播放短音效作为反馈；关闭则不播放
+                try {
+                    if (newMusicOn) {
+                        MediaPlayer mp = MediaPlayer.create(this, R.raw.bullet_shoot);
+                        if (mp != null) {
+                            mp.setOnCompletionListener(MediaPlayer::release);
+                            mp.start();
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+        }
 
         findViewById(R.id.btn_single).setOnClickListener(v -> {
             Intent intent = new Intent(this, DifficultyActivity.class);

@@ -147,8 +147,10 @@ public abstract class Game extends BaseGame {
             // 保存应用级 Context 并初始化短音效池
             this.appContext = context.getApplicationContext();
             initSoundPool();
-            // 启动普通背景音乐
-            playBgm();
+            // 根据设置决定是否启动普通背景音乐
+            if (DifficultySelection.isMusicOn()) {
+                playBgm();
+            }
             
         } catch (Exception e) {
             System.err.println("Game 构造函数异常: " + e.getMessage());
@@ -227,11 +229,10 @@ public abstract class Game extends BaseGame {
                 gameOverFlag = true;
                 System.out.println("Game Over!");
 
-                // 停止所有音乐并播放游戏结束音效
-                stopAllMusic();
-                // if (DifficultySelection.isMusicOn()) {
-                //     new MusicThread("src/videos/game_over.wav").start();
-                // }
+                    // 停止所有音乐并播放游戏结束音效
+                    stopAllMusic();
+                    // 使用 playSound 播放死亡音效（内部会根据 DifficultySelection 判断）
+                    playSound("src/videos/game_over.wav");
             }
         } catch (Exception e) {
             System.err.println("游戏逻辑出错: " + e.getMessage());
@@ -331,9 +332,7 @@ public abstract class Game extends BaseGame {
                 if (heroAircraft.getHp() <= 0) {
                     // 停止所有背景音乐并播放死亡音效
                     stopAllMusic();
-                    // if (DifficultySelection.isMusicOn()) {
-                    //     new MusicThread("src/videos/game_over.wav").start();
-                    // }
+                    playSound("src/videos/game_over.wav");
                 }
             }
         }
@@ -697,6 +696,8 @@ public abstract class Game extends BaseGame {
      * 播放背景音乐
      */
     private synchronized void playBgm() {
+        // Respect global music setting
+        if (!DifficultySelection.isMusicOn()) return;
         try {
             // stop boss bgm if playing
             if (bossBgmPlayer != null) {
@@ -726,6 +727,8 @@ public abstract class Game extends BaseGame {
      * 播放Boss音乐
      */
     private synchronized void playBossBgm() {
+        // Respect global music setting
+        if (!DifficultySelection.isMusicOn()) return;
         try {
             // stop normal bgm
             if (bgmPlayer != null) {
@@ -786,6 +789,8 @@ public abstract class Game extends BaseGame {
     }
 
     private void playShortEffect(int resId) {
+        // Respect global music/effects setting
+        if (!DifficultySelection.isMusicOn()) return;
         if (soundPool == null) {
             initSoundPool();
             if (soundPool == null) return;
