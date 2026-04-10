@@ -24,6 +24,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.widget.EditText;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.media.AudioAttributes;
@@ -90,6 +94,11 @@ public abstract class Game extends BaseGame {
      * 游戏结束标志
      */
     private boolean gameOverFlag = false;
+
+    /**
+     * 是否已经弹出游戏结束对话框
+     */
+    private boolean gameOverDialogShown = false;
 
     // 敌机生成器
     protected final EnemyGenerator enemyGenerator = new EnemyGenerator();
@@ -224,15 +233,18 @@ public abstract class Game extends BaseGame {
             postProcessAction();
 
             // 游戏结束检查英雄机是否存活
-            if (heroAircraft != null && heroAircraft.getHp() <= 0) {
+            if (heroAircraft != null && heroAircraft.getHp() <= 0 && !gameOverFlag) {
                 // 游戏结束
                 gameOverFlag = true;
                 System.out.println("Game Over!");
 
-                    // 停止所有音乐并播放游戏结束音效
-                    stopAllMusic();
-                    // 使用 playSound 播放死亡音效（内部会根据 DifficultySelection 判断）
-                    playSound("src/videos/game_over.wav");
+                // 停止所有音乐并播放游戏结束音效
+                stopAllMusic();
+                // 使用 playSound 播放死亡音效（内部会根据 DifficultySelection 判断）
+                playSound("src/videos/game_over.wav");
+
+                // 在主线程上弹出游戏结束对话框
+                showGameOverDialog();
             }
         } catch (Exception e) {
             System.err.println("游戏逻辑出错: " + e.getMessage());
@@ -600,6 +612,52 @@ public abstract class Game extends BaseGame {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * 游戏结束时弹出对话框，输入玩家姓名并写入排行榜，然后跳转到排行榜页面
+     */
+    private void showGameOverDialog() {
+        if (gameOverDialogShown) {
+            return;
+        }
+        gameOverDialogShown = true;
+
+        // 使用 View 自带的 post 确保在主线程执行 UI 操作
+        this.post(() -> {
+            Context context = getContext();
+            if (!(context instanceof Activity)) {
+                return;
+            }
+            Activity activity = (Activity) context;
+
+            final EditText input = new EditText(activity);
+            input.setHint("请输入你的名字");
+
+            new AlertDialog.Builder(activity)
+                    .setTitle("游戏结束")
+                    .setMessage("本次得分：" + score + "\n请输入你的名字：")
+                    .setView(input)
+                    .setCancelable(false)
+                    .setPositiveButton("确定", (dialog, which) -> {
+                        String name = input.getText().toString().trim();
+                        if (name.isEmpty()) {
+                            name = "玩家";
+                        }
+
+                        // 根据当前难度写入 SQLite 排行榜
+                        DifficultySelection diffSelection = new DifficultySelection();
+                        String difficultyDesc = diffSelection.getSelectedDifficultyDescription();
+                        RankDatabase db = new RankDatabase(activity);
+                        db.addRecord(name, score, difficultyDesc);
+
+                        // 跳转到排行榜页面
+                        Intent intent = new Intent(activity, edu.hitsz.activity.RankActivity.class);
+                        activity.startActivity(intent);
+                        activity.finish();
+                    })
+                    .show();
+        });
     }
 
     /**

@@ -28,6 +28,10 @@
         <activity
             android:name=".activity.GameActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".activity.RankActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

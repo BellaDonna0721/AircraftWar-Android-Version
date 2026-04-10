@@ -6,6 +6,7 @@
       <GradleProjectSettings>
         <option name="testRunner" value="CHOOSE_PER_TEST" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleHome" value="D:\study\Android_Studio\.gradle\wrapper\dists\gradle-9.3.1-bin\dolpjexvothstfrtfx1d62t5x\gradle-9.3.1" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />

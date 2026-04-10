@@ -124,6 +124,18 @@ public class Table {
     }
 
     /**
+     * 删除指定下标的分数记录，并保存到文件
+     * @param index 记录下标（从0开始）
+     */
+    public void deleteRecord(int index) {
+        if (index < 0 || index >= records.size()) {
+            return;
+        }
+        records.remove(index);
+        saveScores();
+    }
+
+    /**
      * 打印排行榜到控制台
      */
     public void printRankList() {
