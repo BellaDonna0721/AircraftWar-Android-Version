@@ -28,11 +28,21 @@
         android:layout_marginTop="160dp" />
 
     <Button
+        android:id="@+id/btn_multiplayer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="联机对战"
+        app:layout_constraintTop_toBottomOf="@id/btn_single"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <Button
         android:id="@+id/btn_rank"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="排行榜"
-        app:layout_constraintTop_toBottomOf="@id/btn_single"
+        app:layout_constraintTop_toBottomOf="@id/btn_multiplayer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp" />

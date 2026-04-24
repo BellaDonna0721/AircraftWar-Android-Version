@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import edu.hitsz.activity.DifficultyActivity;
 import edu.hitsz.activity.RankActivity;
+import edu.hitsz.activity.MultiplayerGameActivity;
 import edu.hitsz.application.DifficultySelection;
 import android.widget.Switch;
 import android.media.MediaPlayer;
@@ -43,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_single).setOnClickListener(v -> {
             Intent intent = new Intent(this, DifficultyActivity.class);
+            startActivity(intent);
+        });
+
+        findViewById(R.id.btn_multiplayer).setOnClickListener(v -> {
+            Intent intent = new Intent(this, MultiplayerGameActivity.class);
             startActivity(intent);
         });
 

@@ -175,7 +175,7 @@ public abstract class Game extends BaseGame {
     protected abstract AbstractEnemy generateEnemyLogic(int enemyCount, int score, int timeInterval); // 敌机生成逻辑（可调整概率等）
 
     // === 模板方法：游戏主流程 ===
-    public final void action() {
+    public void action() {
         System.out.println("action执行");
         try {
             // 检查基本条件
@@ -865,6 +865,41 @@ public abstract class Game extends BaseGame {
         } catch (Exception e) {
             System.err.println("playShortEffect error: " + e.getMessage());
         }
+    }
+
+    /**
+     * 获取当前分数
+     */
+    public int getScore() {
+        return score;
+    }
+
+    /**
+     * 设置分数
+     */
+    public void setScore(int newScore) {
+        score = newScore;
+    }
+
+    /**
+     * 增加分数
+     */
+    public void addScore(int points) {
+        score += points;
+    }
+
+    /**
+     * 获取英雄飞机
+     */
+    public HeroAircraft getHeroAircraft() {
+        return heroAircraft;
+    }
+
+    /**
+     * 获取游戏是否结束
+     */
+    public boolean isGameOver() {
+        return gameOverFlag;
     }
 
 
