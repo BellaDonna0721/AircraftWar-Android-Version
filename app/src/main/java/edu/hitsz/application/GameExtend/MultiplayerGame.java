@@ -22,6 +22,7 @@ public class MultiplayerGame extends NormalGame {
     private boolean opponentDead = false;
     private int lastSentScore = -1;
     private boolean heroDeadSent = false;
+    private boolean matchEnded = false;
 
     public MultiplayerGame(Context context, SocketClient socketClient, String opponentId) {
         super(context);
@@ -68,7 +69,14 @@ public class MultiplayerGame extends NormalGame {
         // 绘制对手分数
         if (canvas != null) {
             drawOpponentScore(canvas);
+            drawWaitingOverlayIfNeeded(canvas);
         }
+    }
+
+    @Override
+    protected boolean shouldShowGameOverDialog() {
+        // 联机模式由服务器统一下发结算消息，不使用单人弹窗
+        return false;
     }
 
     /**
@@ -92,6 +100,32 @@ public class MultiplayerGame extends NormalGame {
     }
 
     /**
+     * 本地死亡后展示等待界面，直到服务端统一发送结算。
+     */
+    private void drawWaitingOverlayIfNeeded(Canvas canvas) {
+        if (!heroDeadSent || matchEnded) {
+            return;
+        }
+
+        Paint maskPaint = new Paint();
+        maskPaint.setColor(0xAA000000);
+        canvas.drawRect(0, 0, Game.SCREEN_WIDTH, Game.SCREEN_HEIGHT, maskPaint);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(0xFFFFFFFF);
+        textPaint.setTextSize(42);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+
+        float centerX = Game.SCREEN_WIDTH / 2.0f;
+        float centerY = Game.SCREEN_HEIGHT / 2.0f;
+        canvas.drawText("你已失败", centerX, centerY - 20, textPaint);
+
+        textPaint.setTextSize(30);
+        canvas.drawText("正在等待对手结束游戏...", centerX, centerY + 40, textPaint);
+    }
+
+    /**
      * 更新对手分数
      */
     public void updateOpponentScore(int score) {
@@ -105,6 +139,13 @@ public class MultiplayerGame extends NormalGame {
     public void setOpponentDead(boolean dead) {
         this.opponentDead = dead;
         Log.d(TAG, "对手死亡状态: " + dead);
+    }
+
+    /**
+     * 标记本局联机对战已经结束（已收到统一结算）。
+     */
+    public void setMatchEnded(boolean ended) {
+        this.matchEnded = ended;
     }
 
     /**

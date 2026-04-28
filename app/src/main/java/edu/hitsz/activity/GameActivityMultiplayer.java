@@ -121,6 +121,9 @@ public class GameActivityMultiplayer extends AppCompatActivity implements Socket
         Log.d(TAG, "游戏结束，赢家: " + winnerId);
         
         gameEnded = true;
+        if (game != null) {
+            game.setMatchEnded(true);
+        }
         
         String result = isWinner ? "胜利！" : "失败！";
         String message = result + "\n" +

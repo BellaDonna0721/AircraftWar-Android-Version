@@ -244,7 +244,9 @@ public abstract class Game extends BaseGame {
                 playSound("src/videos/game_over.wav");
 
                 // 在主线程上弹出游戏结束对话框
-                showGameOverDialog();
+                if (shouldShowGameOverDialog()) {
+                    showGameOverDialog();
+                }
             }
         } catch (Exception e) {
             System.err.println("游戏逻辑出错: " + e.getMessage());
@@ -658,6 +660,13 @@ public abstract class Game extends BaseGame {
                     })
                     .show();
         });
+    }
+
+    /**
+     * 是否显示单人模式结算弹窗。联机模式可重写为 false。
+     */
+    protected boolean shouldShowGameOverDialog() {
+        return true;
     }
 
     /**
